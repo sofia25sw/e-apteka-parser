@@ -17,38 +17,33 @@ from time import sleep
 
 def crawl():
     next_page = 'http://e-apteka.md/products'  # стартовая страница
-    with open('items.json', 'w') as f:
-        item_list = []
+    with open('items_tmp.json', 'w') as f:
+        item_list = set()  # хэш-массив, очень быстрая операция проверки вхождения и только уникальные элементы
         while True:
             page = requests.get(next_page)
             soup = BeautifulSoup(page.text, 'html.parser')
-            table = soup.find('table', {'class':'products'})
-            trs = table.findAll('tr', {'class':'product'})
+            table = soup.find('table', {'class': 'products'})
+            trs = table.findAll('tr', {'class': 'product'})
             # td_second = trs.find('')
             tds = list(map(lambda x: urljoin('http://e-apteka.md', x.findAll('td')[1].find('a')['href']), trs))
-            item_list += tds
+            # item_list += tds
 
+            # Записываем полученые ссылки в файл
             for r in tds:
-                f.write(json.dumps(r, ensure_ascii=False, indent=2) + '\n')
+                if r not in item_list:  # Если ссылка уже есть, то не добавляем ее в файл
+                    f.write(json.dumps(r, ensure_ascii=False, indent=2) + '\n')
+                item_list.add(r)
 
-            try:
-                next_page = soup.find('div', {'class':'pagination'}).find('a', {'class': 'selected'}).find_next_sibling('a')['href']
-            except:
-                return item_list
+            next_page = soup.find('div', {'class': 'pagination'}).find('a', {'class': 'selected'}).find_next_sibling(
+                'a')
+            if next_page.text.isdigit():
+                next_page = next_page['href']
+            else:
+                return
+
             next_page = urljoin('http://e-apteka.md', next_page)
             print(len(item_list))
             sleep(.3)
-
-
-
-
-
-
-
-
-
-
-
 
 
 # def All_links():
